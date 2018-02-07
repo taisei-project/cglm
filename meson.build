@@ -11,6 +11,7 @@ cglm_args = []
 cglm_sources = []
 cglm_headers = []
 cglm_includes = []
+cglm_links = []
 cglm_deps = []
 
 # Hiding symbols that are not explicitly marked as exported
@@ -27,35 +28,44 @@ cglm_deps += cc.find_library('m', required : false)
 subdir('src')
 subdir('include')
 
-cglm_lib = library('cglm', cglm_sources,
-  install : true,
-  c_args : cglm_args,
-  dependencies: cglm_deps,
-)
+lib_type = get_option('lib_type')
 
-cglm_lib_dep = declare_dependency(
+if lib_type == 'default_library'
+  lib_type = get_option('default_library')
+endif
+
+if lib_type == 'static'
+  cglm_lib = static_library('cglm', cglm_sources,
+    install : not meson.is_subproject(),
+    build_by_default : not meson.is_subproject(),
+    c_args : cglm_args,
+    dependencies: cglm_deps,
+  )
+elif lib_type == 'shared'
+  cglm_lib = static_library('cglm', cglm_sources,
+    install : not meson.is_subproject(),
+    build_by_default : not meson.is_subproject(),
+    c_args : cglm_args,
+    dependencies: cglm_deps,
+  )
+elif lib_type == 'inline'
+  cglm_lib = []
+endif
+
+# Make this library usable as a Meson subproject.
+cglm_dep = declare_dependency(
   include_directories: cglm_includes,
   link_with : cglm_lib
 )
 
-cglm_inline_dep = declare_dependency(
-  include_directories: cglm_includes,
-)
-
-# Make this library usable as a Meson subproject.
-
-if get_option('inline_only')
-  cglm_dep = cglm_inline_dep
-else
-  cglm_dep = cglm_lib_dep
+if not meson.is_subproject()
+  pkg_mod = import('pkgconfig')
+  pkg_mod.generate(
+    name : meson.project_name(),
+    filebase : meson.project_name(),
+    description : 'Optimized OpenGL/Graphics Math (glm) for C.',
+    # subdirs : meson.project_name(),
+    libraries : [cglm_lib],
+    version : meson.project_version(),
+  )
 endif
-
-pkg_mod = import('pkgconfig')
-pkg_mod.generate(
-  name : meson.project_name(),
-  filebase : meson.project_name(),
-  description : 'Optimized OpenGL/Graphics Math (glm) for C.',
-  # subdirs : meson.project_name(),
-  libraries : [cglm_lib],
-  version : meson.project_version(),
-)
