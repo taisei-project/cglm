@@ -1,0 +1,1 @@
+option('inline_only', type : 'boolean', value : false, description : 'For use as a subproject dependency; do not link to the CGLM library, use it in header-only mode')
